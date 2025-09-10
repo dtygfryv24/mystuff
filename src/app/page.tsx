@@ -1,3 +1,4 @@
+import React from "react"
 import { ArrowLeft, ChevronDown, Info } from "lucide-react"
 
 // SVG Fox Icon component
