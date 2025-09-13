@@ -135,9 +135,9 @@ const renderWords = () => {
         }
       }}
       ref={(el) => { inputRefs.current[index] = el; }}
-      className={`w-24 p-2 m-1 rounded border text-center text-sm ${
+      className={`w-24 p-2 m-1 rounded-xl border text-left text-sm ${
         index === 0 || wordInputs[index - 1] ? "block" : "hidden"
-      } ${wordInputs[index] ? "border-gray-500 bg-gray-500 text-gray-300" : "border-purple-500 bg-purple-500 text-white"}`}
+      } ${wordInputs[index] ? "border-gray-500 bg-black text-white-300" : "border-purple-500 bg-black text-white"}`}
       placeholder={`${index + 1}.`}
     />
   ))
@@ -214,7 +214,7 @@ const renderWords = () => {
           
 
           {/* Word Grid */}
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 grid grid-cols-3 gap-2">
+          <div className="bg-[#202123] border border-gray-700 rounded-lg p-6 grid grid-cols-3 gap-2">
             {renderWords()}
           </div>
 
@@ -230,7 +230,7 @@ const renderWords = () => {
           <div className="flex justify-between">
             <button 
               type="button" 
-              className="text-blue-400 hover:text-blue-300 transition-colors font-medium"
+              className="text-purple-400 hover:text-blue-300 transition-colors font-medium"
               onClick={() => setShowAll(!showAll)}
             >
               {showAll ? "Hide all" : "Show all"}
@@ -238,7 +238,7 @@ const renderWords = () => {
             <button 
               type="button"
               onClick={clearAll}
-              className="text-blue-400 hover:text-blue-300 transition-colors font-medium"
+              className="text-purple-400 hover:text-blue-300 transition-colors font-medium"
             >
               Clear all
             </button>
