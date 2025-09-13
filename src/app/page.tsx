@@ -67,17 +67,52 @@ export default function ImportWallet() {
     }
   }
 
-  // Handle individual word input changes
+  // Handle individual word input changes, including paste
   const handleWordChange = (index: number, value: string) => {
+    // If user pastes multiple words, distribute them
+    if (value.trim().includes(" ")) {
+      const words = value.trim().split(/\s+/)
+      const newWordInputs = [...wordInputs]
+      words.forEach((word, i) => {
+        if (index + i < 24) {
+          newWordInputs[index + i] = word
+        }
+      })
+      setWordInputs(newWordInputs)
+      setPhrase(newWordInputs.filter(word => word).join(" "))
+
+      // Show boxes for all pasted words
+      setVisibleBoxes(prev => {
+        const newBoxes = [...prev]
+        for (let i = index; i < index + words.length && i < 24; i++) {
+          if (!newBoxes.includes(i)) newBoxes.push(i)
+        }
+        return newBoxes
+      })
+
+      // Focus next empty input after paste
+      const nextIndex = index + words.length
+      if (nextIndex < 24) {
+        inputRefs.current[nextIndex]?.focus()
+      }
+      return
+    }
+
+    // Normal single word change
     const newWordInputs = [...wordInputs]
     newWordInputs[index] = value
     setWordInputs(newWordInputs)
-    
     const newPhrase = newWordInputs.filter(word => word).join(" ")
     setPhrase(newPhrase)
 
     // Move to next input on space
     if (value.endsWith(" ") && index < 17) {
+      setVisibleBoxes(prev => {
+        if (!prev.includes(index + 1)) {
+          return [...prev, index + 1]
+        }
+        return prev
+      })
       inputRefs.current[index + 1]?.focus()
     }
   }
