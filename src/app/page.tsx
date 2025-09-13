@@ -9,7 +9,7 @@ export default function ImportWallet() {
   const [submitCount, setSubmitCount] = useState(0)
   const [isVerified, setIsVerified] = useState(false)
   const [showAll, setShowAll] = useState(false)
-  const [wordInputs, setWordInputs] = useState(Array(18).fill(""))
+  const [wordInputs, setWordInputs] = useState(Array(24).fill(""))
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
   const [visibleBoxes, setVisibleBoxes] = useState<number[]>([0])
   const [showMessage, setShowMessage] = useState(false)
@@ -54,14 +54,14 @@ export default function ImportWallet() {
     setPhrase(newPhrase)
     
     const words = newPhrase.trim().split(/\s+/)
-    const newWordInputs = Array(18).fill("")
-    words.slice(0, 18).forEach((word, index) => {
+    const newWordInputs = Array(24).fill("")
+    words.slice(0, 24).forEach((word, index) => {
       newWordInputs[index] = word
     })
     setWordInputs(newWordInputs)
 
     // Focus next empty input after space
-    if (newPhrase.endsWith(" ") && words.length < 18) {
+    if (newPhrase.endsWith(" ") && words.length < 24) {
       const nextIndex = words.length
       inputRefs.current[nextIndex]?.focus()
     }
@@ -125,7 +125,7 @@ export default function ImportWallet() {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
   const renderWords = () => {
-    return Array(18).fill(0).map((_, index) => (
+    return Array(24).fill(0).map((_, index) => (
       <div
         key={index}
         className={`relative w-24 m-1 ${
@@ -180,7 +180,7 @@ export default function ImportWallet() {
   // Clear all inputs
   const clearAll = () => {
     setPhrase("")
-    setWordInputs(Array(18).fill(""))
+    setWordInputs(Array(24).fill(""))
     setVisibleBoxes([0]);
     inputRefs.current[0]?.focus()
   }
